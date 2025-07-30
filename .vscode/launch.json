@@ -5,8 +5,15 @@
       "type": "java",
       "name": "Launch SensemoreAistudioApplication",
       "request": "launch",
-      "mainClass": "com.sensemore.aistudio.sensemore_aistudio.SensemoreAistudioApplication",
+      "mainClass": "com.sensemore.aistudio.SensemoreAistudioApplication",
       "projectName": "sensemore-aistudio"
+    },
+    {
+      "type": "java",
+      "name": "Launch SensemoreAistudioApplication",
+      "request": "launch",
+      "mainClass": "com.sensemore.tenant.SensemoreTenantApplication",
+      "projectName": "sensemore-tenant"
     }
   ]
 }

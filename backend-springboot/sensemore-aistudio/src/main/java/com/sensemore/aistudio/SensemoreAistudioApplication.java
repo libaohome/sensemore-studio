@@ -1,4 +1,4 @@
-package com.sensemore.aistudio.sensemore_aistudio;
+package com.sensemore.aistudio;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
