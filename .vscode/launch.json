@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Launch SensemoreAistudioApplication",
+      "request": "launch",
+      "mainClass": "com.sensemore.aistudio.sensemore_aistudio.SensemoreAistudioApplication",
+      "projectName": "sensemore-aistudio"
+    }
+  ]
+}
