@@ -9,5 +9,4 @@ public class SensemoreTenantApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SensemoreTenantApplication.class, args);
 	}
-
 }
