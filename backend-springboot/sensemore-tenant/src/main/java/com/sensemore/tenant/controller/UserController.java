@@ -9,6 +9,10 @@ import com.sensemore.tenant.dto.LoginResult;
 import com.sensemore.tenant.dto.CaptchaResult.CaptchaData;
 import com.sensemore.tenant.dto.LoginResult.LoginData;
 import com.sensemore.tenant.dto.LoginResult.UserInfo;
+
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
+
 import com.sensemore.tenant.dto.LogoutResult;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -16,7 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 public class UserController {
@@ -33,13 +37,29 @@ public class UserController {
 
     @PostMapping("login")
     public LoginResult<LoginData> login(@RequestBody LoginRequest loginRequest) {
-        
-        return null;
+        log.info("login request: {}",loginRequest);
+
+        LoginResult<LoginData> loginResult = new LoginResult<>();
+        loginResult.setCode(200);
+        loginResult.setMessage("登录成功");
+        LoginData loginData = new LoginData();
+        UserInfo userInfo = new UserInfo();
+        loginData.setToken("token");
+        userInfo.setUserId(1);
+        userInfo.setUsername("admin");
+        userInfo.setAvatar("avatar");
+        loginData.setUserInfo(userInfo);
+        loginResult.setData(loginData);
+
+        return loginResult;
     }
 
-    @GetMapping("logout")
+    @PostMapping("logout")
     public LogoutResult<String> logout(){
-        return new LogoutResult();
+        LogoutResult<String> logoutResult = new LogoutResult<>();
+        logoutResult.setCode(200);
+        logoutResult.setMessage("退出成功");
+        return logoutResult;
     }
 
     @GetMapping("userinfo")
