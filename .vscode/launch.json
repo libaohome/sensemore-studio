@@ -2,15 +2,29 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "debugpy",
+      "name": "🚀 启动 Sensemore AI",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend-fastapi/sensemore-ai/app/main.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/backend-fastapi/sensemore-ai",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend-fastapi/sensemore-ai",
+        "DEBUG": "true"
+      },
+      "stopOnEntry": false,
+      "justMyCode": true
+    },
+    {
       "type": "java",
-      "name": "Launch SensemoreAistudioApplication",
+      "name": "🚀 启动 AI Studio",
       "request": "launch",
       "mainClass": "com.sensemore.aistudio.SensemoreAistudioApplication",
       "projectName": "sensemore-aistudio"
     },
     {
       "type": "java",
-      "name": "Launch SensemoreAistudioApplication",
+      "name": "🚀 启动 Tenant Service",
       "request": "launch",
       "mainClass": "com.sensemore.tenant.SensemoreTenantApplication",
       "projectName": "sensemore-tenant"
