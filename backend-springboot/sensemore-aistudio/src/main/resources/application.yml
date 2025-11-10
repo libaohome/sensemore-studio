@@ -1,5 +1,21 @@
 server:
-    port: 8081
+    port: 8082
 spring:
     application:
         name: sensemore-aistudio
+    ai:
+        openai:
+            api-key: 115925abb19ec543cdcbe8af4506ff463ea2b5e8
+    autoconfigure:
+        exclude:
+            - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+    datasource:
+        driver-class-name: org.h2.Driver
+        username: root
+        password: test
+    sql:
+        init:
+            schema-locations: classpath:db/schema-h2.sql
+            data-locations: classpath:db/data-h2.sql
+            mode: always
+            platform: h2
