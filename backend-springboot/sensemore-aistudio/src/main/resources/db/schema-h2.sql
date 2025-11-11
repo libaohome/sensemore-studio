@@ -30,3 +30,22 @@ CREATE TABLE student_reservation (
          course VARCHAR(200) NOT NULL COMMENT '课程名称',
          remark VARCHAR(200) NOT NULL COMMENT '学员备注'
 );
+
+-- 创建AI配置表
+CREATE TABLE ai_config (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    provider VARCHAR(50) NOT NULL COMMENT 'AI提供商，如openai',
+    api_key VARCHAR(500) NOT NULL COMMENT 'API密钥',
+    base_url VARCHAR(500) NOT NULL COMMENT '基础URL',
+    model VARCHAR(100) NOT NULL COMMENT '模型名称',
+    is_active BOOLEAN DEFAULT TRUE COMMENT '是否激活'
+);
+
+-- 为表添加注释
+COMMENT ON TABLE ai_config IS 'AI配置表';
+COMMENT ON COLUMN ai_config.id IS '主键';
+COMMENT ON COLUMN ai_config.provider IS 'AI提供商';
+COMMENT ON COLUMN ai_config.api_key IS 'API密钥';
+COMMENT ON COLUMN ai_config.base_url IS '基础URL';
+COMMENT ON COLUMN ai_config.model IS '模型名称';
+COMMENT ON COLUMN ai_config.is_active IS '是否激活';

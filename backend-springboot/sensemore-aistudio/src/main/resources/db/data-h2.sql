@@ -21,3 +21,7 @@ INSERT INTO courses (name, edu, type, price, duration) VALUES
 -- 插入Linux云计算课程数据
 INSERT INTO courses (name, edu, type, price, duration) VALUES
     ('Linux云计算', 3, '编程', 15800, 210);
+
+-- 插入AI配置数据
+INSERT INTO ai_config (provider, api_key, base_url, model, is_active) VALUES
+    ('openai', '115925abb19ec543cdcbe8af4506ff463ea2b5e8', 'https://api-77aaidn1l8c5b7xa.aistudio-app.com/', 'gemma3:27b', TRUE);
