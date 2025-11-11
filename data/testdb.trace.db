@@ -1,0 +1,6 @@
+2025-11-11 13:59:08.575534+08:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "AI_CONFIG" not found (this database is empty); SQL statement:
+SELECT  id,provider,api_key,base_url,model,is_active  FROM ai_config      WHERE  (provider = ? AND is_active = ?) LIMIT 1 [42104-232]
+2025-11-11 14:10:52.550162+08:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "AI_CONFIG" not found (this database is empty); SQL statement:
+SELECT  id,provider,api_key,base_url,model,is_active  FROM ai_config      WHERE  (provider = ? AND is_active = ?) LIMIT 1 [42104-232]

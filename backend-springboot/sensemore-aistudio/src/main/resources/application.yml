@@ -13,14 +13,18 @@ spring:
             - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
     datasource:
         driver-class-name: org.h2.Driver
-        url: jdbc:h2:mem:testdb
+        url: jdbc:h2:file:./data/testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE
         username: root
         password: test
+    h2:
+        console:
+            enabled: true
+            path: /h2-console #http://localhost:8082/h2-console
     sql:
         init:
             schema-locations: classpath:db/schema-h2.sql
             data-locations: classpath:db/data-h2.sql
-            mode: always
+            mode: never
             platform: h2
 mybatis-plus:
     configuration:
