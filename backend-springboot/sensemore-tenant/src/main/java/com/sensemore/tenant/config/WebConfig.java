@@ -1,5 +1,6 @@
 package com.sensemore.tenant.config;
 
+import com.sensemore.tenant.interceptor.AuthInterceptor;
 import com.sensemore.tenant.interceptor.TenantInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +16,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final TenantInterceptor tenantInterceptor;
+    private final AuthInterceptor authInterceptor;
 
     @Override
     public void addInterceptors(@NonNull InterceptorRegistry registry) {
+        if (authInterceptor != null) {
+            registry.addInterceptor(authInterceptor)
+                    .addPathPatterns("/api/**");
+        }
         if (tenantInterceptor != null) {
             registry.addInterceptor(tenantInterceptor)
                     .addPathPatterns("/api/tenants/**")

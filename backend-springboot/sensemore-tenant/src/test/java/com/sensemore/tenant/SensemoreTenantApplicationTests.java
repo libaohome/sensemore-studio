@@ -10,4 +10,11 @@ class SensemoreTenantApplicationTests {
 	void contextLoads() {
 	}
 
+	
+	@Test
+	void createTenant() {
+		//创建租户单元测试代码
+		
+	}
+
 }

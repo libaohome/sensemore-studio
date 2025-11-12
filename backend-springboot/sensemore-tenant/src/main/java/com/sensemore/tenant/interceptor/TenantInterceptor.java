@@ -8,6 +8,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.util.StringUtils;
 
 /**
  * 多租户拦截器
@@ -24,12 +25,19 @@ public class TenantInterceptor implements HandlerInterceptor {
         // 从路径中提取租户ID: /api/tenants/{tenantId}/...
         try {
             String[] parts = requestURI.split("/");
-            if (parts.length > 3 && "tenants".equals(parts[2])) {
-                String tenantIdStr = parts[3];
-                if (tenantIdStr != null && tenantIdStr.matches("\\d+")) {
-                    Long tenantId = Long.parseLong(tenantIdStr);
-                    TenantContext.setTenantId(tenantId);
-                    log.debug("设置租户ID: {}", tenantId);
+            for (int i = 0; i < parts.length - 1; i++) {
+                if ("tenants".equals(parts[i])) {
+                    String tenantIdentifier = parts[i + 1];
+                    if (StringUtils.hasText(tenantIdentifier)) {
+                        if (tenantIdentifier.matches("\\d+")) {
+                            Long tenantId = Long.parseLong(tenantIdentifier);
+                            TenantContext.setTenantId(tenantId);
+                            log.debug("设置租户ID: {}", tenantId);
+                        }
+                        TenantContext.setTenantCode(tenantIdentifier);
+                        log.debug("设置租户代码: {}", tenantIdentifier);
+                    }
+                    break;
                 }
             }
         } catch (Exception e) {

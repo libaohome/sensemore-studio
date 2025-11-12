@@ -1,8 +1,12 @@
 package com.sensemore.tenant.controller;
 
 import com.sensemore.tenant.dto.ApiResponse;
-import com.sensemore.tenant.entity.Tenant;
+import com.sensemore.tenant.dto.TenantResponse;
 import com.sensemore.tenant.dto.CreateTenantRequest;
+import com.sensemore.tenant.dto.CreateTenantResult;
+import com.sensemore.tenant.convertor.TenantConvertor;
+import com.sensemore.tenant.entity.Tenant;
+import com.sensemore.tenant.entity.TenantUser;
 import com.sensemore.tenant.service.TenantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,51 +30,14 @@ import java.util.List;
 public class TenantController {
 
     private final TenantService tenantService;
-
-    /**
-     * 获取所有启用的租户
-     */
-    @GetMapping
-    @Operation(summary = "获取所有启用的租户", description = "返回所有状态为启用的租户列表")
-    public ApiResponse<List<Tenant>> getActiveTenants() {
-        List<Tenant> tenants = tenantService.getActiveTenants();
-        return ApiResponse.success(tenants, "获取租户列表成功");
-    }
-
-    /**
-     * 根据租户代码获取租户信息（替换原ID接口）
-     */
-    @GetMapping("/{code}")
-    @Operation(summary = "根据租户代码获取租户详情", description = "根据租户代码获取租户的详细信息")
-    public ApiResponse<Tenant> getTenantByCodePath(
-            @Parameter(description = "租户代码", required = true) @PathVariable String code) {
-        Tenant tenant = tenantService.getTenantByCode(code);
-        if (tenant == null) {
-            return ApiResponse.fail("租户不存在");
-        }
-        return ApiResponse.success(tenant, "获取租户成功");
-    }
-
-    /**
-     * 根据租户代码获取租户
-     */
-    @GetMapping("/code/{code}")
-    @Operation(summary = "根据租户代码获取租户", description = "根据唯一的租户代码获取租户信息")
-    public ApiResponse<Tenant> getTenantByCode(
-            @Parameter(description = "租户代码", required = true) @PathVariable String code) {
-        Tenant tenant = tenantService.getTenantByCode(code);
-        if (tenant == null) {
-            return ApiResponse.fail("租户不存在");
-        }
-        return ApiResponse.success(tenant, "获取租户成功");
-    }
+    private final TenantConvertor tenantConvertor;
 
     /**
      * 创建租户（不允许用户传入id、createdAt、updatedAt、status等字段）
      */
-    @PostMapping
+    @PostMapping("/create")
     @Operation(summary = "创建新租户", description = "创建一个新的租户（自动填充id、createdAt、updatedAt、status等字段）")
-    public ApiResponse<Void> createTenant(@RequestBody CreateTenantRequest request) {
+    public ApiResponse<CreateTenantResult> createTenant(@RequestBody CreateTenantRequest request) {
         try {
             Tenant tenant = new Tenant();
             tenant.setTenantCode(request.getTenantCode());
@@ -79,10 +46,15 @@ public class TenantController {
             tenant.setContactPhone(request.getContactPhone());
             tenant.setContactEmail(request.getContactEmail());
             tenant.setDescription(request.getDescription());
-            // 自动填充状态和时间
-            tenant.setStatus(1);
-            tenantService.createTenant(tenant);
-            return ApiResponse.success(null, "租户创建成功");
+            TenantUser defaultUser = tenantService.createTenant(tenant);
+
+            CreateTenantResult result = new CreateTenantResult();
+            result.setTenantCode(tenant.getTenantCode());
+            result.setTenantName(tenant.getTenantName());
+            result.setDefaultUsername(defaultUser.getUsername());
+            result.setDefaultPassword(defaultUser.getPassword());
+
+            return ApiResponse.success(result, "租户创建成功");
         } catch (Exception e) {
             log.error("创建租户失败", e);
             return ApiResponse.fail("租户创建失败: " + e.getMessage());
@@ -90,9 +62,34 @@ public class TenantController {
     }
 
     /**
+     * 获取所有启用的租户
+     */
+    @GetMapping("/all")
+    @Operation(summary = "获取所有启用的租户", description = "返回所有状态为启用的租户列表")
+    public ApiResponse<List<TenantResponse>> getActiveTenants() {
+        List<Tenant> tenants = tenantService.getActiveTenants();
+        List<TenantResponse> tenantResponses = tenantConvertor.toResponseList(tenants);
+        return ApiResponse.success(tenantResponses, "获取租户列表成功");
+    }
+
+    /**
+     * 根据租户代码获取租户
+     */
+    @GetMapping("/{code}/detail")
+    @Operation(summary = "根据租户代码获取租户", description = "根据唯一的租户代码获取租户信息")
+    public ApiResponse<TenantResponse> getTenantByCode(
+            @Parameter(description = "租户代码", required = true) @PathVariable String code) {
+        Tenant tenant = tenantService.getTenantByCode(code);
+        if (tenant == null) {
+            return ApiResponse.fail("租户不存在");
+        }
+        TenantResponse tenantResponse = tenantConvertor.toResponse(tenant);
+        return ApiResponse.success(tenantResponse, "获取租户成功");
+    }
+    /**
      * 更新租户信息（通过租户代码）
      */
-    @PostMapping("/{code}")
+    @PostMapping("/{code}/update")
     @Operation(summary = "更新租户信息", description = "根据租户代码更新指定租户的信息")
     public ApiResponse<Void> updateTenantByCode(
             @Parameter(description = "租户代码", required = true) @PathVariable String code,

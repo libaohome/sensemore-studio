@@ -3,12 +3,15 @@ package com.sensemore.tenant.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sensemore.tenant.entity.Tenant;
+import com.sensemore.tenant.entity.TenantUser;
 import com.sensemore.tenant.mapper.TenantMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -18,6 +21,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class TenantService extends ServiceImpl<TenantMapper, Tenant> {
+
+    private final TenantUserService tenantUserService;
 
     /**
      * 根据租户代码获取租户
@@ -39,13 +44,35 @@ public class TenantService extends ServiceImpl<TenantMapper, Tenant> {
     }
 
     /**
-     * 创建租户
+     * 创建租户并生成默认管理员用户
      */
     @Transactional
-    public void createTenant(Tenant tenant) {
+    public TenantUser createTenant(Tenant tenant) {
         log.info("创建租户: {}", tenant.getTenantCode());
+        LocalDateTime now = LocalDateTime.now();
         tenant.setStatus(1);
+        if (tenant.getCreatedAt() == null) {
+            tenant.setCreatedAt(now);
+        }
+        tenant.setUpdatedAt(now);
         baseMapper.insert(tenant);
+
+        String contactEmail = normalizeText(tenant.getContactEmail());
+        String contactPhone = normalizeText(tenant.getContactPhone());
+        String defaultUsername = deriveDefaultUsername(tenant.getTenantCode(), contactEmail);
+        String defaultPassword = buildDefaultPassword(tenant.getTenantName(), tenant.getTenantCode(), contactEmail);
+
+        TenantUser defaultUser = new TenantUser();
+        defaultUser.setTenantCode(tenant.getTenantCode());
+        defaultUser.setUsername(defaultUsername);
+        defaultUser.setPassword(defaultPassword);
+        defaultUser.setEmail(StringUtils.hasText(contactEmail) ? contactEmail : null);
+        defaultUser.setPhone(StringUtils.hasText(contactPhone) ? contactPhone : null);
+        defaultUser.setCreatedAt(now);
+        defaultUser.setUpdatedAt(now);
+
+        tenantUserService.createUser(defaultUser);
+        return defaultUser;
     }
 
     /**
@@ -88,6 +115,7 @@ public class TenantService extends ServiceImpl<TenantMapper, Tenant> {
         Tenant dbTenant = baseMapper.selectOne(wrapper);
         if (dbTenant != null) {
             tenant.setId(dbTenant.getId());
+            tenant.setUpdatedAt(LocalDateTime.now());
             baseMapper.updateById(tenant);
         }
     }
@@ -100,6 +128,27 @@ public class TenantService extends ServiceImpl<TenantMapper, Tenant> {
         LambdaQueryWrapper<Tenant> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Tenant::getTenantCode, tenantCode);
         baseMapper.delete(wrapper);
+    }
+
+    private String deriveDefaultUsername(String tenantCode, String contactEmail) {
+        if (StringUtils.hasText(contactEmail) && contactEmail.contains("@")) {
+            return contactEmail.substring(0, contactEmail.indexOf('@'));
+        }
+        return tenantCode + "_admin";
+    }
+
+    private String buildDefaultPassword(String tenantName, String tenantCode, String contactEmail) {
+        String prefix = StringUtils.hasText(tenantName) ? tenantName : tenantCode;
+        String suffix = StringUtils.hasText(contactEmail) ? contactEmail : "";
+        return prefix + suffix;
+    }
+
+    private String normalizeText(String source) {
+        if (source == null) {
+            return null;
+        }
+        String trimmed = source.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
 }

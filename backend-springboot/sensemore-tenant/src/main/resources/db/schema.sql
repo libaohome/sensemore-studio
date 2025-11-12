@@ -1,37 +1,3 @@
-) COMMENT '租户用户表';
-
--- 用户登录Token表
-CREATE TABLE IF NOT EXISTS user_token (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Token主键ID',
-    user_id BIGINT NOT NULL COMMENT '用户ID',
-    tenant_code VARCHAR(50) NOT NULL COMMENT '租户业务代码',
-    token VARCHAR(500) NOT NULL COMMENT 'Token值',
-    refresh_token VARCHAR(500) COMMENT '刷新Token值',
-    expire_at TIMESTAMP COMMENT '过期时间',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    INDEX idx_user_token (user_id, token),
-    INDEX idx_tenant_code (tenant_code)
-) COMMENT '用户登录Token表';
--- =====================================================
--- Sensemore Tenant AI Management System Database Schema
--- 移除所有外键约束，使用业务代码作为关联字段
--- =====================================================
-
--- 租户表
-CREATE TABLE IF NOT EXISTS tenant (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '内部ID（仅用于索引）',
-    tenant_code VARCHAR(50) NOT NULL UNIQUE COMMENT '租户业务代码（对外公开使用，如 TENANT1001）',
-    tenant_name VARCHAR(100) NOT NULL COMMENT '租户名称',
-    contact_person VARCHAR(50) COMMENT '联系人',
-    contact_phone VARCHAR(20) COMMENT '联系电话',
-    contact_email VARCHAR(100) COMMENT '联系邮箱',
-    status TINYINT DEFAULT 1 COMMENT '租户状态: 0-禁用, 1-启用',
-    description VARCHAR(500) COMMENT '描述',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    UNIQUE KEY uk_tenant_code (tenant_code),
-    INDEX idx_status (status)
-) COMMENT '租户管理表';
 
 -- AI 模型厂商配置表
 CREATE TABLE IF NOT EXISTS ai_provider_config (
@@ -166,13 +132,6 @@ CREATE TABLE IF NOT EXISTS alert_rule (
     INDEX idx_status (status)
 ) COMMENT '告警规则表（无外键，通过 tenant_code 关联）';
 
-CREATE INDEX idx_tenant_status ON tenant(status);
-CREATE INDEX idx_provider_status ON ai_provider_config(status);
-CREATE INDEX idx_model_status ON model_config(status);
-CREATE INDEX idx_usage_stat_date ON api_usage_stat(tenant_code, date_key);
-CREATE INDEX idx_call_log_tenant ON api_call_log(tenant_code);
-CREATE INDEX idx_alert_status ON alert_rule(status);
-
 -- 租户用户表
 CREATE TABLE IF NOT EXISTS tenant_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
@@ -180,9 +139,11 @@ CREATE TABLE IF NOT EXISTS tenant_user (
     username VARCHAR(50) NOT NULL COMMENT '用户名',
     password VARCHAR(100) NOT NULL COMMENT '密码（加密存储）',
     email VARCHAR(100) COMMENT '邮箱',
+    phone VARCHAR(20) COMMENT '手机号',
     status TINYINT DEFAULT 1 COMMENT '用户状态: 0-禁用, 1-启用',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_tenant_username (tenant_code, username),
-    INDEX idx_tenant_code (tenant_code)
+    INDEX idx_tenant_code (tenant_code),
+    INDEX idx_tenant_phone (tenant_code, phone)
 ) COMMENT '租户用户表';

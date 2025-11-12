@@ -5,10 +5,10 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class LoginResult<T> extends ResultDto<T> {
+public class LoginResult {
 
     @Data
-    public static class LoginData {
+    public static class AuthData {
         private String token;
         private String refreshToken;
         private UserInfo userInfo;
@@ -21,7 +21,7 @@ public class LoginResult<T> extends ResultDto<T> {
         private String avatar;
         private String email;
         private String phone;
-              private String tenantCode;
-              private String tenantName;
-         }
+        private String tenantCode;
+        private String tenantName;
+    }
 }

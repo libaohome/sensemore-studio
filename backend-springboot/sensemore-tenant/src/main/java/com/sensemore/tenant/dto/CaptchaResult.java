@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class CaptchaResult<T> extends ResultDto<T> {
+public class CaptchaResult<T> {
 
     @Data
     public static class CaptchaData {
