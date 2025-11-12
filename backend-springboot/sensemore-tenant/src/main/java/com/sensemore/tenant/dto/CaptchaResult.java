@@ -1,20 +1,24 @@
 package com.sensemore.tenant.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class CaptchaResult<CaptchaData> extends ResultDto<CaptchaData> {
-
+@EqualsAndHashCode(callSuper = false)
+public class CaptchaResult<T> {
 
     @Data
     public static class CaptchaData {
 
-        public CaptchaData(String captchaId, String captchaImage) {
-            this.captchaId = captchaId;
-            this.captchaImage = captchaImage;
+        public CaptchaData() {
         }
+
+        public CaptchaData(String captchaId, String captchaImg) {
+            this.captchaId = captchaId;
+            this.captchaImg = captchaImg;
+        }
+
         private String captchaId;
-        private String captchaImage;
+        private String captchaImg;
     }
 }

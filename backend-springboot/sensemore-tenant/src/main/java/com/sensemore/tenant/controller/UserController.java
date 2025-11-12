@@ -1,70 +1,371 @@
 package com.sensemore.tenant.controller;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.sensemore.tenant.dto.CaptchaResult;
-import com.sensemore.tenant.dto.LoginRequest;
-import com.sensemore.tenant.dto.LoginResult;
+import com.sensemore.tenant.dto.*;
 import com.sensemore.tenant.dto.CaptchaResult.CaptchaData;
-import com.sensemore.tenant.dto.LoginResult.LoginData;
+import com.sensemore.tenant.dto.LoginResult.AuthData;
 import com.sensemore.tenant.dto.LoginResult.UserInfo;
-
-import lombok.extern.java.Log;
+import com.sensemore.tenant.convertor.UserConvertor;
+import com.sensemore.tenant.entity.Tenant;
+import com.sensemore.tenant.entity.TenantUser;
+import com.sensemore.tenant.entity.UserToken;
+import com.sensemore.tenant.service.SmsCodeService;
+import com.sensemore.tenant.service.TenantService;
+import com.sensemore.tenant.service.TenantUserService;
+import com.sensemore.tenant.service.UserTokenService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
-import com.sensemore.tenant.dto.LogoutResult;
+import java.time.LocalDateTime;
+import java.util.List;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
+/**
+ * 租户用户管理 API
+ * 
+ * 提供租户用户的创建、登录、注销、修改密码、找回密码等操作
+ */
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/tenants/{tenantCode}/users")
+@RequiredArgsConstructor
+@Tag(name = "租户用户管理", description = "租户用户的创建、登录、注销、修改密码、找回密码操作")
 public class UserController {
 
-    @GetMapping("captcha")    
-    public CaptchaResult<CaptchaData> getCaptcha() {
-        CaptchaResult<CaptchaData> captchaResult = new CaptchaResult<>();
-        captchaResult.setCode(200);
-        captchaResult.setMessage("Captcha generated successfully");
-        captchaResult.setData(new CaptchaData("123456","data:image/jpeg;base64,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9085p+cQ9o390HKi4vOafnEPaN/dPOafnEPaN/dByouLzmn5xD2jf3Tzmn5xD2jf3QcqLi85p+cQ9o39085p+cQ9o390HKi4vOafnEPaN/dPOafnEPaN/dByouLzmn5xD2jf3Tzmn5xD2jf3QcqLi85p+cQ9o39085p+cQ9o390HKi4vOafnEPaN/dPOafnEPaN/dByouLzmn5xD2jf3Tzmn5xD2jf3QcqLi85p+cQ9o39085p+cQ9o390HKi4vOafnEPaN/dPOafnEPaN/dByouLzmn5xD2jf3Tzmn5xD2jf3QcqLi85p+cQ9o39085p+cQ9o390HKpI0j+3t/+Pl+YqsvOafnEPaN/dSZpGIOO78QQQa6Ugjj+8g84iIg7zGeHajC2Iqu1VDJA2N5MEjxl9rESdR44jmN+W4gjiXSE58SsXEOHLPiWkFNe6GKqY3P7Nzhk+PPLPVcNrdw3HbltXh6jQdhOWZ0kdRdoWuOyOOoYWt/LWYT+pQTl1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1J1KieArC3Pr128X004CsLc+vXbxfTQTt1ITnxKieArC3Pr128X0129k0S4QtEjJTQyV8rM8nV0n2g28rAA09YQZ1o/0PMxHh2O63esqqB07yYI2sb9+LIZP27dp1suUZHjRb/tz3ogIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIg//2Q==\n" + //
-                        ""));
-        return captchaResult;
+    private final TenantService tenantService;
+    private final TenantUserService tenantUserService;
+    private final UserTokenService userTokenService;
+    private final SmsCodeService smsCodeService;
+    private final UserConvertor userConvertor;
+
+    /**
+     * 获取验证码
+     */
+    @GetMapping("/captcha")
+    @Operation(summary = "获取验证码", description = "获取图形验证码")
+    public ApiResponse<CaptchaData> getCaptcha() {
+        try {
+            CaptchaData captchaData = new CaptchaData();
+            captchaData.setCaptchaId("123456");
+            captchaData.setCaptchaImg("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+            return ApiResponse.success(captchaData, "获取验证码成功");
+        } catch (Exception e) {
+            log.error("获取验证码失败", e);
+            return ApiResponse.fail("获取验证码失败: " + e.getMessage());
+        }
     }
 
-    @PostMapping("login")
-    public LoginResult<LoginData> login(@RequestBody LoginRequest loginRequest) {
-        log.info("login request: {}",loginRequest);
-
-        LoginResult<LoginData> loginResult = new LoginResult<>();
-        loginResult.setCode(200);
-        loginResult.setMessage("登录成功");
-        LoginData loginData = new LoginData();
-        UserInfo userInfo = new UserInfo();
-        loginData.setToken("token");
-        userInfo.setUserId(1);
-        userInfo.setUsername("admin");
-        userInfo.setAvatar("avatar");
-        loginData.setUserInfo(userInfo);
-        loginResult.setData(loginData);
-
-        return loginResult;
+    /**
+     * 用户登录
+     */
+    @PostMapping("/login")
+    @Operation(summary = "用户登录", description = "根据租户代码、用户名和密码登录")
+    public ApiResponse<AuthData> login(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @RequestBody LoginRequest request) {
+        try {
+            // 设置租户代码
+            request.setTenantCode(tenantCode);
+            
+            // 校验租户
+            Tenant tenant = tenantService.getTenantByCode(tenantCode);
+            if (tenant == null || tenant.getStatus() != 1) {
+                return ApiResponse.fail("租户不存在或已禁用");
+            }
+            
+            // 校验用户
+            TenantUser user = tenantUserService.getByTenantCodeAndUsername(tenantCode, request.getUsername());
+            if (user == null || user.getStatus() != 1) {
+                return ApiResponse.fail("用户不存在或已禁用");
+            }
+            
+            // 校验密码（此处应加密校验，示例为明文）
+            if (!user.getPassword().equals(request.getPassword())) {
+                return ApiResponse.fail("密码错误");
+            }
+            
+            // 生成token（此处为示例，实际应生成JWT等）
+            String token = "token-" + user.getId() + "-" + System.currentTimeMillis();
+            String refreshToken = "refresh-" + user.getId() + "-" + System.currentTimeMillis();
+            
+            // 保存token到数据库
+            UserToken userToken = new UserToken();
+            userToken.setUserId(user.getId());
+            userToken.setTenantCode(tenantCode);
+            userToken.setToken(token);
+            userToken.setRefreshToken(refreshToken);
+            LocalDateTime now = LocalDateTime.now();
+            userToken.setCreatedAt(now);
+            userToken.setExpireAt(now.plusHours(12));
+            userTokenService.save(userToken);
+            
+            // 构建返回结果
+            AuthData authData = new AuthData();
+            authData.setToken(token);
+            authData.setRefreshToken(refreshToken);
+            UserInfo userInfo = new UserInfo();
+            userInfo.setUserId(user.getId().toString());
+            userInfo.setUsername(user.getUsername());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setPhone(user.getPhone());
+            userInfo.setTenantCode(tenant.getTenantCode());
+            userInfo.setTenantName(tenant.getTenantName());
+            authData.setUserInfo(userInfo);
+            
+            return ApiResponse.success(authData, "登录成功");
+        } catch (Exception e) {
+            log.error("用户登录失败", e);
+            return ApiResponse.fail("登录失败: " + e.getMessage());
+        }
     }
 
-    @PostMapping("logout")
-    public LogoutResult<String> logout(){
-        LogoutResult<String> logoutResult = new LogoutResult<>();
-        logoutResult.setCode(200);
-        logoutResult.setMessage("退出成功");
-        return logoutResult;
+    /**
+     * 用户注销
+     */
+    @PostMapping("/logout")
+    @Operation(summary = "用户注销", description = "用户退出登录，清除token")
+    public ApiResponse<String> logout(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        try {
+            // 实际应该根据token删除对应的UserToken记录
+            // 这里简化处理
+            log.info("用户注销: tenantCode={}", tenantCode);
+            return ApiResponse.success("注销成功", "用户已注销");
+        } catch (Exception e) {
+            log.error("用户注销失败", e);
+            return ApiResponse.fail("注销失败: " + e.getMessage());
+        }
     }
 
-    @GetMapping("userinfo")
-    public UserInfo userinfo(){
-        return new UserInfo();
+    /**
+     * 创建用户
+     */
+    @PostMapping
+    @Operation(summary = "创建新用户", description = "在指定租户下创建一个新用户（自动填充id、createdAt、updatedAt、status等字段）")
+    public ApiResponse<Void> createUser(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @RequestBody CreateUserRequest request) {
+        try {
+            // 校验租户是否存在
+            Tenant tenant = tenantService.getTenantByCode(tenantCode);
+            if (tenant == null || tenant.getStatus() != 1) {
+                return ApiResponse.fail("租户不存在或已禁用");
+            }
+            
+            // 检查用户名是否已存在
+            TenantUser existingUser = tenantUserService.getByTenantCodeAndUsername(tenantCode, request.getUsername());
+            if (existingUser != null) {
+                return ApiResponse.fail("用户名已存在");
+            }
+            
+            // 创建用户
+            TenantUser user = new TenantUser();
+            user.setTenantCode(tenantCode);
+            user.setUsername(request.getUsername());
+            user.setPassword(request.getPassword()); // 实际应该加密存储
+            user.setEmail(request.getEmail());
+            user.setPhone(request.getPhone());
+            user.setStatus(1);
+            
+            tenantUserService.createUser(user);
+            return ApiResponse.success(null, "用户创建成功");
+        } catch (Exception e) {
+            log.error("创建用户失败", e);
+            return ApiResponse.fail("用户创建失败: " + e.getMessage());
+        }
     }
 
+    /**
+     * 获取租户下的所有用户
+     */
+    @GetMapping
+    @Operation(summary = "获取租户下的所有用户", description = "返回指定租户下的所有用户列表（不包含密码等敏感信息）")
+    public ApiResponse<List<UserResponse>> getUsers(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode) {
+        try {
+            List<TenantUser> users = tenantUserService.getUsersByTenantCode(tenantCode);
+            List<UserResponse> userResponses = userConvertor.toResponseList(users);
+            return ApiResponse.success(userResponses, "获取用户列表成功");
+        } catch (Exception e) {
+            log.error("获取用户列表失败", e);
+            return ApiResponse.fail("获取用户列表失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 修改密码
+     */
+    @PostMapping("/change-password")
+    @Operation(summary = "修改密码", description = "用户修改自己的密码")
+    public ApiResponse<Void> changePassword(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @RequestBody ChangePasswordRequest request) {
+        try {
+            request.setTenantCode(tenantCode);
+            
+            // 校验用户
+            TenantUser user = tenantUserService.getByTenantCodeAndUsername(tenantCode, request.getUsername());
+            if (user == null || user.getStatus() != 1) {
+                return ApiResponse.fail("用户不存在或已禁用");
+            }
+            
+            // 校验旧密码
+            if (!user.getPassword().equals(request.getOldPassword())) {
+                return ApiResponse.fail("旧密码错误");
+            }
+            
+            // 更新密码（实际应该加密存储）
+            tenantUserService.updatePassword(user.getId(), request.getNewPassword());
+            return ApiResponse.success(null, "密码修改成功");
+        } catch (Exception e) {
+            log.error("修改密码失败", e);
+            return ApiResponse.fail("修改密码失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 发送短信验证码
+     */
+    @PostMapping("/send-sms-code")
+    @Operation(summary = "发送短信验证码", description = "向指定手机号发送短信验证码，用于找回密码")
+    public ApiResponse<String> sendSmsCode(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @RequestBody SendSmsCodeRequest request) {
+        try {
+            request.setTenantCode(tenantCode);
+            
+            // 校验租户
+            Tenant tenant = tenantService.getTenantByCode(tenantCode);
+            if (tenant == null || tenant.getStatus() != 1) {
+                return ApiResponse.fail("租户不存在或已禁用");
+            }
+            
+            // 校验用户是否存在
+            TenantUser user = tenantUserService.getByTenantCodeAndPhone(tenantCode, request.getPhone());
+            if (user == null) {
+                return ApiResponse.fail("该手机号未注册");
+            }
+            
+            // 发送短信验证码
+            String code = smsCodeService.sendSmsCode(tenantCode, request.getPhone());
+            // 实际生产环境不应返回验证码，这里仅用于测试
+            log.info("短信验证码已发送: tenantCode={}, phone={}, code={}", tenantCode, request.getPhone(), code);
+            return ApiResponse.success("验证码已发送", "短信验证码已发送，请查收（测试环境返回验证码: " + code + "）");
+        } catch (Exception e) {
+            log.error("发送短信验证码失败", e);
+            return ApiResponse.fail("发送短信验证码失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 根据手机号短信验证码找回密码
+     */
+    @PostMapping("/reset-password")
+    @Operation(summary = "找回密码", description = "根据手机号和短信验证码重置密码")
+    public ApiResponse<Void> resetPassword(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @RequestBody ResetPasswordRequest request) {
+        try {
+            request.setTenantCode(tenantCode);
+            
+            // 校验租户
+            Tenant tenant = tenantService.getTenantByCode(tenantCode);
+            if (tenant == null || tenant.getStatus() != 1) {
+                return ApiResponse.fail("租户不存在或已禁用");
+            }
+            
+            // 校验用户是否存在
+            TenantUser user = tenantUserService.getByTenantCodeAndPhone(tenantCode, request.getPhone());
+            if (user == null) {
+                return ApiResponse.fail("该手机号未注册");
+            }
+            
+            // 校验短信验证码
+            if (!smsCodeService.verifyCode(tenantCode, request.getPhone(), request.getSmsCode())) {
+                return ApiResponse.fail("短信验证码错误或已过期");
+            }
+            
+            // 更新密码（实际应该加密存储）
+            tenantUserService.updatePasswordByPhone(tenantCode, request.getPhone(), request.getNewPassword());
+            return ApiResponse.success(null, "密码重置成功");
+        } catch (Exception e) {
+            log.error("找回密码失败", e);
+            return ApiResponse.fail("找回密码失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 删除用户（通过用户ID）
+     */
+    @PostMapping("/{userId}/delete")
+    @Operation(summary = "删除用户", description = "根据用户ID删除指定的用户")
+    public ApiResponse<Void> deleteUser(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
+        try {
+            TenantUser user = tenantUserService.getById(userId);
+            if (user == null) {
+                return ApiResponse.fail("用户不存在");
+            }
+            if (!user.getTenantCode().equals(tenantCode)) {
+                return ApiResponse.fail("用户不属于该租户");
+            }
+            tenantUserService.removeUser(userId);
+            return ApiResponse.success(null, "用户已删除");
+        } catch (Exception e) {
+            log.error("删除用户失败", e);
+            return ApiResponse.fail("删除用户失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 禁用用户（通过用户ID）
+     */
+    @PostMapping("/{userId}/disable")
+    @Operation(summary = "禁用用户", description = "将指定用户的状态更改为禁用")
+    public ApiResponse<Void> disableUser(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
+        try {
+            TenantUser user = tenantUserService.getById(userId);
+            if (user == null) {
+                return ApiResponse.fail("用户不存在");
+            }
+            if (!user.getTenantCode().equals(tenantCode)) {
+                return ApiResponse.fail("用户不属于该租户");
+            }
+            tenantUserService.disableUser(userId);
+            return ApiResponse.success(null, "用户已禁用");
+        } catch (Exception e) {
+            log.error("禁用用户失败", e);
+            return ApiResponse.fail("禁用用户失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 启用用户（通过用户ID）
+     */
+    @PostMapping("/{userId}/enable")
+    @Operation(summary = "启用用户", description = "将指定用户的状态更改为启用")
+    public ApiResponse<Void> enableUser(
+            @Parameter(description = "租户代码", required = true) @PathVariable String tenantCode,
+            @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
+        try {
+            TenantUser user = tenantUserService.getById(userId);
+            if (user == null) {
+                return ApiResponse.fail("用户不存在");
+            }
+            if (!user.getTenantCode().equals(tenantCode)) {
+                return ApiResponse.fail("用户不属于该租户");
+            }
+            tenantUserService.enableUser(userId);
+            return ApiResponse.success(null, "用户已启用");
+        } catch (Exception e) {
+            log.error("启用用户失败", e);
+            return ApiResponse.fail("启用用户失败: " + e.getMessage());
+        }
+    }
 }
