@@ -1,4 +1,4 @@
-package com.sensemore.sensemore_tenant;
+package com.sensemore.tenant;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
